@@ -26,7 +26,8 @@ int main ()
   FILE *fp;
   int count = 48, conteggio = 0;
   unsigned int nextTime ;
-
+  char msg[] = {'D', 2, 169, '*', 0};
+  
   printf("Sto iniziando\n");
   if ((fd = serialOpen ("/dev/ttyAMA0", 115200)) < 0)
   {
@@ -53,7 +54,7 @@ while(1){
   /// il comando e' 70 - 0 - 70 xor 0 xor $A9 - 42
   /// oppure         F - 0 - F  xor 0 xor $A9 - *
     checksum = 'F' ^ 0 ^ 0xA9;
-      printf ("\nOut: %c: ", 'F') ;
+      printf ("\nCMD: %c: ", 'F') ;
       fflush (stdout) ;
       //// invia su seriale
       serialPutchar (fd, 'F') ;
@@ -67,7 +68,7 @@ while(1){
   /// invio del comando B (indietro)
   case 1:
     checksum = 'B' ^ 0 ^ 0xA9;
-      printf ("\nOut: %c: ", 'B') ;
+      printf ("\nCMD: %c: ", 'B') ;
       fflush (stdout) ;
       //// INVIA su seriale
       serialPutchar (fd, 'B') ;
@@ -81,7 +82,7 @@ while(1){
   /// invio del comando 'S' (STOP)
   case 2:
     checksum = 'S' ^ 0 ^ 0xA9;
-      printf ("\nOut: %c: ", 'S') ;
+      printf ("\nCMD: %c: ", 'S') ;
       fflush (stdout) ;
       /// invia su seriale
       serialPutchar (fd, 'S') ;
@@ -94,7 +95,7 @@ while(1){
 
   case 3:
       checksum = 'D' ^ 1 ^ 0xA9;
-      printf ("\nOut: %c: %c", 'D', '1') ;
+      printf ("\nCMD: %c: %c", 'D', '1') ;
       fflush (stdout) ;
       /// invia su seriale
       serialPutchar (fd, 'D') ;
@@ -107,7 +108,7 @@ while(1){
 
   case 4:
       checksum = 'D' ^ 3 ^ 0xA9;
-      printf ("\nOut: %c: %c", 'D', '3') ;
+      printf ("\nCMD: %c: %c", 'D', '3') ;
       fflush (stdout) ;
       /// invia su seriale
       serialPutchar (fd, 'D') ;
@@ -115,34 +116,60 @@ while(1){
       serialPutchar (fd, checksum);
       serialPutchar (fd, '*');
       fprintf(fp, "\nD3 %d: ", checksum);
+      stato = 5;
+  break;
+
+  case 5:
+ //     char msg[] = {'D', 2, 169, '*', 0};
+      checksum = 'D' ^ 2 ^ 0xA9;
+      msg[2] = checksum;
+      printf ("\nCMD: %c: %c", 'D', '2') ;
+      fflush (stdout) ;
+      /// invia su seriale
+      serialPuts(fd, msg);
+      stato = 6;
+  break;
+
+
+  case 6:
+      checksum = 'D' ^ 11 ^ 0xA9;
+      printf ("\nCMD: %c: %c%c", 'D', '1', '1') ;
+      fflush (stdout) ;
+      /// invia su seriale
+      serialPutchar (fd, 'D') ;
+      serialPutchar (fd, 11);
+      serialPutchar (fd, checksum);
+      serialPutchar (fd, '*');
+      fprintf(fp, "\nD11 %d: ", checksum);
+      stato = 7;
+  break;
+
+
+  case 7:
+      checksum = 'D' ^ 8 ^ 0xA9;
+      printf ("\nCMD: %c: %c", 'D', '8') ;
+      fflush (stdout) ;
+      /// invia su seriale
+      serialPutchar (fd, 'D') ;
+      serialPutchar (fd, 8);
+      serialPutchar (fd, checksum);
+      serialPutchar (fd, '*');
+      fprintf(fp, "\nD8 %d: ", checksum);
       stato = 0;
   break;
-  
+
   default:
       stato = 0;
   break; 
 
-/* if (conteggio > 16){
-      while (serialDataAvail (fd)){
-        //printf("ricevuto \n");
-        //printf (" -> %3d", serialGetchar (fd)) ;
-        printf("%c", serialGetchar(fd));
-        fflush (stdout) ;
-        //printf("\n");	
-      }
-      /// reset di conteggio: aspetta altri 16 secondi
-      conteggio = 0;
-      printf("\n");
-    }
-  */
      } /// fine dello SWITCH 
   
    ///attesa di 150 ms
-  delay(150);
+  //delay(250);
   /// occorre leggere la risposta. 
-  while (serialDataAvail(fd)){
+  while (serialDataAvail(fd) > 0){
    int dato_ric =  serialGetchar(fd);	  
-   printf (" -> %3d ", dato_ric) ;
+   printf (" -%3d ", dato_ric) ;
    fflush (stdout) ;
    fprintf(fp, "%d - ", dato_ric);
   }
